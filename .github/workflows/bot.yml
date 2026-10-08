@@ -3,9 +3,13 @@ on:
   push:
     paths: [data.xlsm]
   workflow_dispatch:
+concurrency:
+  group: bot
+  cancel-in-progress: true
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
