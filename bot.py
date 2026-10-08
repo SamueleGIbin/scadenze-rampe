@@ -12,6 +12,8 @@ COLORS = {1: "Good", 2: "Warning", 3: "Attention"}
 def secs(v):
     if isinstance(v, (dt.datetime, dt.time)):
         return v.hour * 3600 + v.minute * 60 + v.second
+    if isinstance(v, dt.timedelta):
+        return int(v.total_seconds()) % 86400
     return None
 
 def nxt(s, now):
@@ -19,19 +21,19 @@ def nxt(s, now):
     return d if d >= now else d + dt.timedelta(days=1)
 
 def load(now):
-    wb = openpyxl.load_workbook("data.xlsm", data_only=True, read_only=True)
-    ref = secs(wb["INformazioni per calcoli"]["AB3"].value)
+    ws = openpyxl.load_workbook("data.xlsx", data_only=True).active
+    ref = secs(ws["G2"].value)
     tasks = []
-    for r in wb["Outbound"].iter_rows(min_row=2, values_only=True):
-        tour, dest, dep, frt, ramp, closed = r[1], r[4], secs(r[6]), secs(r[8]), r[22], r[23]
-        if not (tour and isinstance(ramp, int) and 300 <= ramp < 400 and dep is not None and not closed):
+    for r in ws.iter_rows(min_row=2, max_col=5, values_only=True):
+        ramp, dest, dep, frt, closed = r[0], r[1], secs(r[2]), secs(r[3]), r[4]
+        if not (isinstance(ramp, (int, float)) and dep is not None and not closed):
             continue
         if frt is not None and ref is not None:
             s, verb = (ref + frt) % 86400, "girare"
         else:
             s, verb = dep, "chiudere"
         d = nxt(s, now)
-        tasks.append({"deadline": d, "text": f"Baia {ramp} - {dest} - da {verb} {d:%H:%M}", "sent": 0})
+        tasks.append({"deadline": d, "text": f"Baia {int(ramp)} - {dest} - da {verb} {d:%H:%M}", "sent": 0})
     tasks.sort(key=lambda t: t["deadline"])
     return tasks
 
