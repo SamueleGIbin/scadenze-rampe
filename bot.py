@@ -39,12 +39,14 @@ def load(now):
         ramp, dest, dep, frt, closed, pre = r[0], r[1], secs(r[2]), r[3], r[4], r[5]
         if not (isinstance(ramp, (int, float)) and dep is not None and not closed):
             continue
-        d = nxt(dep, now) - dt.timedelta(minutes=minutes(dest, pre))
-        text = f"Baia {int(ramp)} - {dest} - da chiudere {d:%H:%M}"
+        p = nxt(dep, now)
+        d = p - dt.timedelta(minutes=minutes(dest, pre))
+        text = f"Baia {int(ramp)} - {dest} - da chiudere {d:%H:%M} ({p:%H:%M})"
         if frt:
             text += " - chiamare CR per girare freight"
         tasks.append({
             "deadline": d,
+            "dep": p,
             "text": text,
             "zone": "BASSA" if ramp < 332 else "ALTA",
             "ramp": int(ramp),
@@ -100,7 +102,7 @@ def run():
         msg += f" - file delle {ts:%H:%M}"
     items = [("Accent", msg, None)]
     for z in ("BASSA", "ALTA"):
-        lst = ", ".join(f"{t['ramp']} {t['dest']} ({t['deadline']:%H:%M})" for t in tasks if t["frt"] and t["zone"] == z)
+        lst = ", ".join(f"{t['ramp']} {t['dest']} {t['deadline']:%H:%M} ({t['dep']:%H:%M})" for t in tasks if t["frt"] and t["zone"] == z)
         items.append(("Accent", f"DA GIRARE FREIGHT {z}: {lst or 'nessuna'}", None))
     send(items)
     zones = {t["zone"] for t in tasks}
