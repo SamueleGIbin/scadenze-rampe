@@ -1,7 +1,7 @@
 name: bot
 on:
   push:
-    paths: [data.xlsm]
+    paths: [data.xlsx]
   workflow_dispatch:
 concurrency:
   group: bot
